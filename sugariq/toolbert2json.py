@@ -70,7 +70,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert toolbert data to jso')
     parser.add_argument('-f', '--filename', required=True, help='toolbert data filename')
     parser.add_argument('-u', '--user', type=int, help='retrieve uesr records')
+    parser.add_argument('-j', '--json', action='store_true', help='output as json array')
     args = parser.parse_args()
 
-    for x in toolbert_data(args.filename, args.user):
-        print(json.dumps(x, indent=2, sort_keys=True))
+    if args.json:
+        print(json.dumps(list(toolbert_data(args.filename, args.user)), indent=2, sort_keys=True))
+    else:
+        for x in toolbert_data(args.filename, args.user):
+            print(json.dumps(x, indent=2, sort_keys=True))
