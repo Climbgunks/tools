@@ -13,7 +13,7 @@ with open(args.fname) as f:
 sg_counts = {}
 for entry in js:
     for v in entry['value']:
-        for sg in v['sgs']:
+        for sg in v.get('sgs', []):
             date = sg['dateTime'].split('T')[0]
             if date not in sg_counts:
                 sg_counts[date] = 1
