@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 
-
 import argparse
 import json
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--fname')
+parser = argparse.ArgumentParser('count sgs from redis json')
+parser.add_argument('-f'. '--fname', required=True, help='redis json filename')
 args = parser.parse_args()
-
 
 with open(args.fname) as f:
     js = json.load(f)
@@ -23,9 +21,4 @@ for day in js:
             else:
                 day_cnt[date] += 1
 
-
-
 print(json.dumps(day_cnt, indent=2, sort_keys=True))
-
-            
-    
