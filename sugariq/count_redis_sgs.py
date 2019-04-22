@@ -1,10 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import json
 
 parser = argparse.ArgumentParser('count sgs from redis json')
-parser.add_argument('-f'. '--fname', required=True, help='redis json filename')
+parser.add_argument('-f', '--fname', required=True, help='redis json filename')
 args = parser.parse_args()
 
 with open(args.fname) as f:
