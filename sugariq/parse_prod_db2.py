@@ -4,6 +4,7 @@ import json
 from math import floor
 import csv
 import argparse
+import sys
 
 '''
 This file parses 4 data files that were retrieved using db2 queries similar to:
@@ -24,8 +25,8 @@ db2 "EXPORT TO sgjson.csv OF DEL MODIFIED BY COLDEL0X09 select distinct * from A
 '''
 # edit the variables in the next section
 
-exclude_dates = [ '20190417', '20190418' ]
-exclude_before_date = 20190410 # as int
+exclude_dates = [ 20190422, 20190421 ]
+exclude_before_date = 20190414 # as int
 pct_limit = 5.0
 
 ABOVE_FILE = 'sgabove.csv'
@@ -41,7 +42,7 @@ csv_file = 'prod_for_excel.csv'
 if csv_file is not None:
     csv_out = open(csv_file, 'w')
     csvwriter = csv.writer(csv_out)
-    csvwriter.writerow([ 'person_id', 'date', 'totalCnt', 'sensorCnt',
+    csvwriter.writerow([ 'person_id', 'date', 'last_date', 'totalCnt', 'sensorCnt',
                          'js_above', 'js_below', 'js_in',
                          'calc_above', 'calc_below', 'calc_in' ])
 
@@ -62,10 +63,10 @@ with open(JSON_FILE) as f:
         j = json.loads(g[7])
         if j['timeInRangeSummary']['aboveRange'] < 0:
             continue
-        pid = g[1]
-        date = g[2]
-        if date in exclude_dates:
-            continue
+        pid = int(g[1])
+        date = int(g[2])
+        #if date in exclude_dates:
+        #continue
         if pid not in js:
             js[pid] = {}
         if date not in js[pid]:
@@ -85,10 +86,10 @@ with open(ABOVE_FILE) as f:
         if line.startswith('person'):
             continue
         g = line.split()
-        pid = g[0]
-        date = g[1]
-        if date in exclude_dates or int(date) <= exclude_before_date:
-            continue
+        pid = int(g[0])
+        date = int(g[1])
+        #if date in exclude_dates or int(date) <= exclude_before_date:
+        #    continue
         cnt = int(g[2])
         if pid not in calc:
             calc[pid] = {}
@@ -105,10 +106,10 @@ with open(BELOW_FILE) as f:
         if line.startswith('person'):
             continue
         g = line.split()
-        pid = g[0]
-        date = g[1]
-        if date in exclude_dates or int(date) <= exclude_before_date:
-            continue
+        pid = int(g[0])
+        date = int(g[1])
+        #if date in exclude_dates or int(date) <= exclude_before_date:
+        #    continue
         cnt = int(g[2])
         if pid not in calc:
             calc[pid] = {}
@@ -124,10 +125,10 @@ with open(TOTAL_FILE) as f:
         if line.startswith('person'):
             continue
         g = line.split()
-        pid = g[0]
-        date = g[1]
-        if date in exclude_dates or int(date) <= exclude_before_date:
-            continue
+        pid = int(g[0])
+        date = int(g[1])
+        #if date in exclude_dates or int(date) <= exclude_before_date:
+        #    continue
         cnt = int(g[2])
         if pid not in calc:
             calc[pid] = {}
@@ -146,6 +147,12 @@ with open(TOTAL_FILE) as f:
 #print(json.dumps(calc, indent=2, sort_keys=True))
 
 # stats
+
+# calculate last date for each user
+last_date = {}
+for pid in calc:
+    last_date[pid] = sorted(calc[pid].keys())[-1]
+
 gtotal = 0
 gdiff = 0
 gdiff_pct_limit = 0
@@ -154,6 +161,8 @@ for pid in calc:
     pdiff = 0
     pdiff_pct_limit = 0
     for date in calc[pid]:
+        if date in exclude_dates or date <= exclude_before_date:
+            continue
         if pid not in js or date not in js[pid]:
             print('ERROR no matching js data {} {}'.format(pid, date))
             continue
@@ -167,7 +176,7 @@ for pid in calc:
                 pdiff_pct_limit += 1
         # csv out
         if csv_file:
-            csvwriter.writerow([ pid, date, calc[pid][date]['totalCnt'], js[pid][date]['sensorCnt'],
+            csvwriter.writerow([ pid, date, last_date[pid], calc[pid][date]['totalCnt'], js[pid][date]['sensorCnt'],
                                  js[pid][date]['pct']['above'], js[pid][date]['pct']['below'], js[pid][date]['pct']['in'], 
                                  calc[pid][date]['pct']['above'], calc[pid][date]['pct']['below'], calc[pid][date]['pct']['in'] ])
     gtotal += ptotal
