@@ -60,9 +60,9 @@ if __name__ == '__main__':
         remaining = len(klist)
         batchsize = 10000
         start = 0
-        batch = min(batchsize, remaining)
         while remaining > 0:
             print('remaining: {}'.format(remaining))
+            batch = min(batchsize, remaining)
             mapping = dict(zip(klist[start:start+batch], vlist[start:start+batch]))
             r2.mset(mapping)
             remaining -= batch
