@@ -1,0 +1,15 @@
+FROM centos:latest
+
+COPY create-stunnel.py sugariq-redis-migrate.py /tmp/
+ADD stunnel-centos.tgz /
+
+RUN yum update -y && \
+    yum install -y epel-release && \
+    yum install -y python python-pip net-tools nmap-ncat lsof \
+                   emacs-nox openssl time vim redis psmisc  && \
+    pip install redis
+
+WORKDIR /tmp
+ENTRYPOINT tail -f /dev/null
+
+
