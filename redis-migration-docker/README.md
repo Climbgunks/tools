@@ -39,11 +39,15 @@ redis-cli -p 7000
   flushdb
   
 
-# modify sugariq-redis-migrate.py to point to the correct source/target
-# then run it
+# copy redis data from source to target  
 # for the actual migration source and target db will be 0
 # I've been using db=3 for the target (r2) db for testing
-./sugariq-redis-migrate.py
+
+./sugariq-redis-migrate.py --help
+
+./sugariq-redis-migrate.py -t 7000 -p <password> --target-db 3   # testing to cloud redis db 3
+
+./sugariq-redis-migrate.py -t 7000 -p <password> --flushdb --danger  # copy to db 0, remove whatever was there
 
 
 
