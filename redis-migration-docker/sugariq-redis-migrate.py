@@ -2,47 +2,70 @@
 
 import redis
 import argparse
+import sys
 
-r = None
-r2 = None
-dryrun = False
+source = None
+target = None
 
-print('### Dryrun = {} ###'.format(dryrun))
+args = None
+
+def handle_args():
+    parser = argparse.ArgumentParser(description='Redis migration utility')
+    parser.add_argument('-s', '--source-port', type=int, default=6379, help='specify the local source port (default:6379)')
+    parser.add_argument('--source-db', type=int, default=0, help='redis db [0-15], default 0')
+    parser.add_argument('-t', '--target-port', type=int, required=True, help='local port to reach the target')
+    parser.add_argument('--target-db', type=int, default=0, help='redis db [0-15], default 0')
+    parser.add_argument('--flushdb', action='store_true', help='flush/clear target db at start')
+    parser.add_argument('--danger', action='store_true', help='for safety, this option must be specified if targetting db 0')
+    parser.add_argument('-p', '--password', default=None, help='password for the cloud db')
+    parser.add_argument('-d', '--dryrun', action='store_true', help='just check db connectivity (no writes)')
+    global args
+    args = parser.parse_args()
+
+    if args.target_db == 0 and not args.danger:
+        print('ERROR: --danger flag must be used if targetting db 0')
+        sys.exit(-1)
 
 def handle_special(k):
-    ktype = r.type(k)
+    ktype = source.type(k)
     print('handling key {} of type {}'.format(k, ktype))
-    if not dryrun:
-        r2.delete(k)  # remove any existing key before we add to it
+    if not args.dryrun:
+        target.delete(k)  # remove any existing key before we modify it
     if ktype == 'list':
-        v = r.lrange(k, 0, -1)
-        if not dryrun:
-            r2.rpush(k, *v)
+        v = source.lrange(k, 0, -1)
+        if not args.dryrun:
+            target.rpush(k, *v)
     elif ktype == 'hash':
-        v = r.hgetall(k)
-        if not dryrun:
-            r2.hmset(k, v)
+        v = source.hgetall(k)
+        if not args.dryrun:
+            target.hmset(k, v)
     elif ktype == 'set':
-        v = r.smembers(k)
-        if not dryrun:
-            r2.sadd(k, *v)
+        v = source.smembers(k)
+        if not args.dryrun:
+            target.sadd(k, *v)
     else:
         print('yow... type {} not handled!!!'.format(ktype))
     
 if __name__ == '__main__':
-    # source redis client
-    # r = redis.Redis(host='localhost', port=7000, db=0, password='db29db89c56a993547c34b0530911705a13318302c06585af5d57fce2bea7e24')
-    r = redis.Redis(host='localhost', port=6379, db=0)
-    # target redis client
-    #r2 = redis.Redis(host='localhost', port=7000, db=3, password='db29db89c56a993547c34b0530911705a13318302c06585af5d57fce2bea7e24')
-    r2 = redis.Redis(host='localhost', port=6379, db=3)
 
-    klist = r.keys('*')
+    handle_args()
+
+    source = redis.Redis(host='localhost', port=args.source_port, db=args.source_db)
+    target = redis.Redis(host='localhost', port=args.target_port, db=args.target_db, password=args.password)
+
+    if args.dryrun:
+        print('### DRYRUN mode -- no DB changes ###')
+    elif args.flushdb:
+        print('flushing db {}'.format(args.target_db))
+        target.flushdb()
+
+    klist = source.keys('*')
     print('Number of keys: {}'.format(len(klist)))
-    vlist = r.mget(klist)
+    vlist = source.mget(klist)
     cnt = 0
     removed = 0
-    # do this in reverse order to maintain indexing
+
+    # do this in reverse order to maintain index position
     for i in reversed(range(len(vlist))):
         if 'OFFSET' in klist[i]:
             print('removing {}'.format(klist[i]))
@@ -56,7 +79,8 @@ if __name__ == '__main__':
             cnt += 1
     print('# of non-string types: {}'.format(cnt))
     print('# of removed keyss: {}'.format(removed))
-    if not dryrun:
+
+    if not args.dryrun:
         remaining = len(klist)
         batchsize = 10000
         start = 0
@@ -64,7 +88,7 @@ if __name__ == '__main__':
             print('remaining: {}'.format(remaining))
             batch = min(batchsize, remaining)
             mapping = dict(zip(klist[start:start+batch], vlist[start:start+batch]))
-            r2.mset(mapping)
+            target.mset(mapping)
             remaining -= batch
             start += batch
 

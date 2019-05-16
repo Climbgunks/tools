@@ -1,24 +1,43 @@
 
 To build
    docker build -f Dockerfile-<platform> -t <tag> .
+   docker tag .....
+   docker push .....
    
 To run
-   docker run -d [--name ***] <tag>
+   locally) docker run -d [--name ***] <tag>
+   or
+   cloud) kubectl run redis-migration-tool --image=<tag>
 
+
+Example migration workflow
+---------------------------
 
 WORKDIR /tmp
-copy service credentials to /tmp
+copy service credentials to /tmp/credentials.json
 copy dump.rdb to /tmp/dump.rdb
 
 # start local redis that reads the dump.rdb file
 redis-service &    # uses port 6379
 
+# test local redis
+redis-cli
+  dbsize
+
+
 # create an stunnel to the redis cloud service
+# we're going to use port 7000
 ./create-stunnel.py -c credentials.json -p 7000
 
-# test the connection
+# test the remote connection
 redis-cli -p 7000
   auth PASSWORD (as shown by create-stunnel.py)
+  dbsize
+  !! if you're using a db other than 0 !!
+  select 3
+  !! if you need to clear the remote db before migration !!
+  flushdb
+  
 
 # modify sugariq-redis-migrate.py to point to the correct source/target
 # then run it
