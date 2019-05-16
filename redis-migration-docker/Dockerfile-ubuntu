@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-COPY create-stunnel.py sugariq-redis-migrate.py /tmp/
+COPY README.md create-stunnel.py sugariq-redis-migrate.py /tmp/
 
 RUN apt update && apt upgrade -y && \
     apt install -y python python-pip net-tools inetutils-ping emacs-nox stunnel \

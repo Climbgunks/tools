@@ -1,6 +1,6 @@
 FROM centos:latest
 
-COPY create-stunnel.py sugariq-redis-migrate.py /tmp/
+COPY README.md create-stunnel.py sugariq-redis-migrate.py /tmp/
 ADD stunnel-centos.tgz /
 
 RUN yum update -y && \
