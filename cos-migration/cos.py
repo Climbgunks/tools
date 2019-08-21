@@ -38,6 +38,9 @@ class CloudObjectStore(object):
             object_name = os.path.basename(local_name)
         self.s3_client.upload_file(local_name, self.bucket, object_name)
 
+    def list_buckets(self):
+        return self.s3_client.list_buckets()['Buckets']
+
 def cos_list(osr, args):
     files = osr.list_objects()
     for file in sorted(files, key = lambda f: f['name']):
@@ -52,18 +55,25 @@ def cos_upload(osr, args):
 def cos_delete(osr, args):
     osr.delete_object(args.objectname)
 
+def cos_listbuckets(osr, args):
+    for bucket in osr.list_buckets():
+        print(bucket['Name'])
+
 if __name__ == "__main__":
     parser = ArgumentParser(description='Cloud object storage utility tool')
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('-c', '--credfile', required=True, help='COS json credentials (w/ HMAC key)')
-    required.add_argument('-b', '--bucket', required=True, help='COS bucket name')
+    required.add_argument('-b', '--bucket', required=True, help='COS bucket name (ignored for listbuckets)')
 
     subparsers = parser.add_subparsers(dest='command', help='Commands')
     download_parser = subparsers.add_parser('download', help='Download from COS')
     download_parser.add_argument('objectname', help='COS object name')
     download_parser.add_argument('-f', '--filename', help='local filename')
     download_parser.set_defaults(func=cos_download)
+
+    listbuckets_parser = subparsers.add_parser('listbuckets', help='List buckets in COS')
+    listbuckets_parser.set_defaults(func=cos_listbuckets)
 
     upload_parser = subparsers.add_parser('upload', help='Upload to COS')
     upload_parser.add_argument('filename', help='COS object name')
